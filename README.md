@@ -6,8 +6,8 @@ The processor is initially based on [Assimbly Connector](https://github.com/assi
 
 ### Installation
 
-1. [Download](https://github.com/assimbly/producewithcamel/releases) the NAR file.
-2. Put the NAR file in the lib directory of Nifi.
+1. Build the nar : mvn install
+2. Put the NAR file in the lib directory of Nifi : cp nifi-camel-nar/target/nifi-camel-nar-1.11.4.nar ..../nifi-1.11.4/lib/
 3. For older installations of Nifi (before version 1.9) you need to restart.
 
 ### Usage

@@ -6,20 +6,22 @@ The processor is initially based on [Assimbly Connector](https://github.com/assi
 
 ### Installation
 
-1. Build the nar : mvn install
-2. Put the NAR file in the lib directory of Nifi : cp nifi-camel-nar/target/nifi-camel-nar-1.11.4.nar ..../nifi-1.11.4/lib/
-3. For older installations of Nifi (before version 1.9) you need to restart.
+1. Build the NAR : mvn install
+2. Put the NAR file in the Nifi lib directory : cp nifi-camel-nar/target/nifi-camel-nar-1.11.4.nar ..../nifi-1.11.4/lib/
+3. For older installations of Nifi (before version 1.9) you need to restart Nifi.
 
 ### Usage
 
-The ProduceWithCamel processor has 5 properties:
+The ProduceWithCamel processor has 8 properties:
 
-* To URI: The URI of the Camel component.
+* Exchange Pattern: InOnly/InOut, InOut wait for bringing back the answer
+* Return Body: true/false, if Camel body must be returned as Nifi flowfile content
+* Return Headers: true/false, if Camel headers must be returned into Nifi flowfile attributes
+* To URI: The URI of the Camel component
 * Error URI: The URI of the Camel componet in case of an error
 * Maximum Deliveries: Maximum of retries in case of an error 
 * Delivery Delay: Delay between retries
 * Log Level: The loglevel of the Camel route
-* Return Headers: true/false, if Camel headers must be returned into Nifi attributes
 
 
 The processor accepts dynamic properties prefixed with "camel."

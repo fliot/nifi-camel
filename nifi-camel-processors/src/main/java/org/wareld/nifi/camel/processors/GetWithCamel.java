@@ -22,10 +22,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.camel.ConsumerTemplate;
+import org.apache.camel.Exchange;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
@@ -51,11 +53,21 @@ import org.assimbly.connector.Connector;
 
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
 @Tags({"Camel Consumer"})
-@CapabilityDescription("Get messages from Apache Camel")
+@CapabilityDescription("Get messages from Apache Camel component (consumer)")
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute = "", description = "")})
 @WritesAttributes({@WritesAttribute(attribute = "", description = "")})
 public class GetWithCamel extends AbstractProcessor {
+
+  public static final PropertyDescriptor RETURN_HEADERS =
+      new PropertyDescriptor.Builder()
+          .name("RETURN_HEADERS")
+          .displayName("Return Headers")
+          .description("Return Camel exchange out headers into Nifi flowfile attributes")
+          .required(true)
+          .allowableValues("true", "false")
+          .defaultValue("false")
+          .build();
 
   public static final PropertyDescriptor FROM_URI =
       new PropertyDescriptor.Builder()
@@ -109,6 +121,7 @@ public class GetWithCamel extends AbstractProcessor {
     getLogger().info("Init process..............................");
 
     final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
+    descriptors.add(RETURN_HEADERS);
     descriptors.add(FROM_URI);
     descriptors.add(ERROR_URI);
     descriptors.add(LOG_LEVEL);
@@ -178,14 +191,23 @@ public class GetWithCamel extends AbstractProcessor {
       throws ProcessException {
 
     // Get the message from the Camel route
-    Object output = template.receiveBody("direct:nifi-" + flowId);
+    Exchange exchange = template.receive("direct:nifi-" + flowId);
 
-    if (output == null) {
+    if (exchange == null) {
 
       return;
     }
 
     FlowFile flowfile = session.create();
+
+    if (context.getProperty(RETURN_HEADERS).getValue().equals("true")) {
+      // Write the camel headers into attributes
+      for (Map.Entry<String, Object> entry : exchange.getMessage().getHeaders().entrySet()) {
+        flowfile =
+            session.putAttribute(
+                flowfile, String.format("camel.%s", entry.getKey()), entry.getValue().toString());
+      }
+    }
 
     // To write the results back out to flow file
     flowfile =
@@ -195,7 +217,11 @@ public class GetWithCamel extends AbstractProcessor {
 
               @Override
               public void process(OutputStream out) throws IOException {
-                out.write(output.toString().getBytes());
+                try {
+                  out.write(exchange.getMessage().getBody(byte[].class));
+                } catch (Exception e) {
+                  out.write(exchange.getMessage().getBody(String.class).getBytes());
+                }
               }
             });
 
@@ -229,7 +255,7 @@ public class GetWithCamel extends AbstractProcessor {
 
     if (errorURIProperty == null || errorURIProperty.isEmpty()) {
       errorURIProperty =
-          "log:getwithcamel. + flowId + ?level=OFF&showAll=true&multiline=true&style=Fixed";
+          "log:GetWithCamel. + flowId + ?level=OFF&showAll=true&multiline=true&style=Fixed";
     }
 
     properties = new TreeMap<>();

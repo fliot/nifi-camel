@@ -60,8 +60,8 @@ import org.apache.nifi.processor.util.StandardValidators;
 import org.assimbly.connector.Connector;
 import org.assimbly.docconverter.DocConverter;
 
-@Tags({"Camel Submitter"})
-@CapabilityDescription("Put messages to Apache Camel component")
+@Tags({"Camel Producer"})
+@CapabilityDescription("Put messages to Apache Camel component (producer)")
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute = "", description = "")})
 @WritesAttributes({@WritesAttribute(attribute = "", description = "")})

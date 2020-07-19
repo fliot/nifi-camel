@@ -16,8 +16,15 @@
  */
 package io.github.assimbly.processors.consumewithcamel;
 
-import org.apache.nifi.components.PropertyDescriptor;
-import org.apache.nifi.flowfile.FlowFile;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.UUID;
 import org.apache.camel.ConsumerTemplate;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
@@ -25,241 +32,221 @@ import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.behavior.WritesAttributes;
-import org.apache.nifi.annotation.lifecycle.OnScheduled;
-import org.apache.nifi.annotation.lifecycle.OnStopped;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
-import org.apache.nifi.processor.exception.ProcessException;
+import org.apache.nifi.annotation.lifecycle.OnScheduled;
+import org.apache.nifi.annotation.lifecycle.OnStopped;
+import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.AbstractProcessor;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.Relationship;
-import org.apache.nifi.processor.util.StandardValidators;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeMap;
-
-import java.util.UUID;
-
-import java.io.IOException;
-import java.io.OutputStream;
+import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.io.OutputStreamCallback;
-
+import org.apache.nifi.processor.util.StandardValidators;
 import org.assimbly.connector.Connector;
-import org.assimbly.docconverter.DocConverter;
-
 
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
 @Tags({"Camel Consumer"})
 @CapabilityDescription("Consume messages with Apache Camel")
 @SeeAlso({})
-@ReadsAttributes({@ReadsAttribute(attribute="", description="")})
-@WritesAttributes({@WritesAttribute(attribute="", description="")})
+@ReadsAttributes({@ReadsAttribute(attribute = "", description = "")})
+@WritesAttributes({@WritesAttribute(attribute = "", description = "")})
 public class ConsumeWithCamel extends AbstractProcessor {
-	
-    public static final PropertyDescriptor FROM_URI = new PropertyDescriptor
-            .Builder().name("FROM_URI")
-            .displayName("From URI")
-            .description("From endpoint. Consumes messages with the specified Camel component")
-            .required(false)
-            .addValidator(StandardValidators.URI_VALIDATOR)
-            .build();
 
-    public static final PropertyDescriptor ERROR_URI = new PropertyDescriptor
-            .Builder().name("ERROR_URI")
-            .displayName("Error URI")
-            .description("Error endpoint. Sends errors with the specified Camel component")
-            .required(false)
-            .addValidator(StandardValidators.URI_VALIDATOR)
-            .build();
+  public static final PropertyDescriptor FROM_URI =
+      new PropertyDescriptor.Builder()
+          .name("FROM_URI")
+          .displayName("From URI")
+          .description("From endpoint. Consumes messages with the specified Camel component")
+          .required(false)
+          .addValidator(StandardValidators.URI_VALIDATOR)
+          .build();
 
-    public static final PropertyDescriptor LOG_LEVEL = new PropertyDescriptor
-            .Builder().name("LOG_LEVEL")
-            .displayName("LOG_LEVEL")
-            .description("Set the log level")
-            .required(true)
-            .defaultValue("OFF")
-            .allowableValues("OFF","INFO","WARN","ERROR","DEBUG","TRACE")
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .build();	    
-	   
-    public static final Relationship SUCCESS = new Relationship.Builder()
-            .name("SUCCESS")
-            .description("Succes relationship")
-            .build();
-    
-    private List<PropertyDescriptor> descriptors;
+  public static final PropertyDescriptor ERROR_URI =
+      new PropertyDescriptor.Builder()
+          .name("ERROR_URI")
+          .displayName("Error URI")
+          .description("Error endpoint. Sends errors with the specified Camel component")
+          .required(false)
+          .addValidator(StandardValidators.URI_VALIDATOR)
+          .build();
 
-    private Set<Relationship> relationships;
+  public static final PropertyDescriptor LOG_LEVEL =
+      new PropertyDescriptor.Builder()
+          .name("LOG_LEVEL")
+          .displayName("LOG_LEVEL")
+          .description("Set the log level")
+          .required(true)
+          .defaultValue("OFF")
+          .allowableValues("OFF", "INFO", "WARN", "ERROR", "DEBUG", "TRACE")
+          .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+          .build();
 
-    private Connector connector = new org.assimbly.connector.impl.CamelConnector();
-    
-    private TreeMap<String, String> properties;
-    
-    private ConsumerTemplate template;
-    
-    private String input;
-    
-    private String flowId;
-    
-    
-    @Override
-    protected void init(final ProcessorInitializationContext context) {
+  public static final Relationship SUCCESS =
+      new Relationship.Builder().name("SUCCESS").description("Succes relationship").build();
 
-		getLogger().info("Init process..............................");
+  private List<PropertyDescriptor> descriptors;
 
-    	final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
-        descriptors.add(FROM_URI);
-        descriptors.add(ERROR_URI);
-        descriptors.add(LOG_LEVEL);
-        this.descriptors = Collections.unmodifiableList(descriptors);
+  private Set<Relationship> relationships;
 
-        final Set<Relationship> relationships = new HashSet<Relationship>();
-        relationships.add(SUCCESS);
-        this.relationships = Collections.unmodifiableSet(relationships);
-        
+  private Connector connector = new org.assimbly.connector.impl.CamelConnector();
+
+  private TreeMap<String, String> properties;
+
+  private ConsumerTemplate template;
+
+  private String input;
+
+  private String flowId;
+
+  @Override
+  protected void init(final ProcessorInitializationContext context) {
+
+    getLogger().info("Init process..............................");
+
+    final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
+    descriptors.add(FROM_URI);
+    descriptors.add(ERROR_URI);
+    descriptors.add(LOG_LEVEL);
+    this.descriptors = Collections.unmodifiableList(descriptors);
+
+    final Set<Relationship> relationships = new HashSet<Relationship>();
+    relationships.add(SUCCESS);
+    this.relationships = Collections.unmodifiableSet(relationships);
+  }
+
+  @Override
+  public Set<Relationship> getRelationships() {
+    return this.relationships;
+  }
+
+  @Override
+  public final List<PropertyDescriptor> getSupportedPropertyDescriptors() {
+    return descriptors;
+  }
+
+  @OnScheduled
+  public void onScheduled(final ProcessContext context) {
+
+    // Use Assimbly Connector to manage Apache Camel (https://github.com/assimbly/connector)
+    getLogger().info("Starting Apache Camel");
+
+    // Start Apache camel
+    try {
+      startCamelConnector();
+    } catch (Exception e2) {
+      getLogger().error("Can't start Apache Camel.");
+      e2.printStackTrace();
     }
 
-    @Override
-    public Set<Relationship> getRelationships() {
-        return this.relationships;
+    // Create a flow ID
+    UUID uuid = UUID.randomUUID();
+    flowId = context.getName() + uuid.toString();
+
+    // configure the flow (Camel route)
+    try {
+      configureCamelFlow(context);
+    } catch (Exception e1) {
+      getLogger().error("Can't configure Apache Camel route.");
+      e1.printStackTrace();
     }
 
-    
-    @Override
-    public final List<PropertyDescriptor> getSupportedPropertyDescriptors() {
-        return descriptors;
+    // start the flow (Camel route)
+    try {
+      connector.startFlow(flowId);
+    } catch (Exception e1) {
+      getLogger().error("Can't start Apache Camel.");
+      e1.printStackTrace();
     }
 
-       
-    @OnScheduled
-    public void onScheduled(final ProcessContext context) {
+    // Create the endpoint producer
+    try {
+      template = connector.getConsumerTemplate();
 
-    	//Use Assimbly Connector to manage Apache Camel (https://github.com/assimbly/connector)
-    	getLogger().info("Starting Apache Camel");
-        
-        //Start Apache camel
-        try {
-			startCamelConnector();
-		} catch (Exception e2) {
-			getLogger().error("Can't start Apache Camel.");
-			e2.printStackTrace();
-		}
+    } catch (Exception e) {
+      getLogger().error("Can't create Apache Camel endpoint.");
+      e.printStackTrace();
+    }
+  }
 
-		//Create a flow ID
-		UUID uuid = UUID.randomUUID();
-        flowId = context.getName() + uuid.toString();
+  @Override
+  public void onTrigger(final ProcessContext context, final ProcessSession session)
+      throws ProcessException {
 
-   		//configure the flow (Camel route)
-        try {
-			configureCamelFlow(context);
-		} catch (Exception e1) {
-			getLogger().error("Can't configure Apache Camel route.");
-			e1.printStackTrace();
-		}
-        
-   		//start the flow (Camel route)
-        try {
-			connector.startFlow(flowId);
-		} catch (Exception e1) {
-			getLogger().error("Can't start Apache Camel.");
-			e1.printStackTrace();
-		}        
-        
-   		//Create the endpoint producer
-   		try {
-			template = connector.getConsumerTemplate();
+    // Get the message from the Camel route
+    Object output = template.receiveBody("direct:nifi-" + flowId);
 
-		} catch (Exception e) {
-			getLogger().error("Can't create Apache Camel endpoint.");
-			e.printStackTrace();
-		}
-        
+    if (output == null) {
+
+      return;
     }
 
-    @Override
-    public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
+    FlowFile flowfile = session.create();
 
-        //Get the message from the Camel route
-    	Object output = template.receiveBody("direct:nifi-" + flowId);
+    // To write the results back out to flow file
+    flowfile =
+        session.write(
+            flowfile,
+            new OutputStreamCallback() {
 
-        if ( output == null ) {
-        	
-            return;
-        }
-    	
-      	FlowFile flowfile = session.create();
-
-        // To write the results back out to flow file
-        flowfile = session.write(flowfile, new OutputStreamCallback() {
-
-            @Override
-            public void process(OutputStream out) throws IOException {
+              @Override
+              public void process(OutputStream out) throws IOException {
                 out.write(output.toString().getBytes());
-            }
-        });
+              }
+            });
 
-        session.transfer(flowfile, SUCCESS);
+    session.transfer(flowfile, SUCCESS);
+  }
 
+  public void startCamelConnector() throws Exception {
+
+    getLogger().info("Starting Apache Camel");
+
+    // Start Camel context
+    connector.start();
+  }
+
+  @OnStopped
+  public void stopCamelConnector() throws Exception {
+
+    getLogger().info("Stopping Apache Camel");
+
+    connector.stopFlow(flowId);
+    connector.stop();
+    template.stop();
+  }
+
+  private void configureCamelFlow(final ProcessContext context) throws Exception {
+
+    String fromURIProperty = context.getProperty(FROM_URI).getValue();
+    String toURIProperty = "direct:nifi-" + flowId;
+    String errorURIProperty = context.getProperty(ERROR_URI).getValue();
+    final String logLevelProperty = context.getProperty(LOG_LEVEL).getValue();
+
+    if (errorURIProperty == null || errorURIProperty.isEmpty()) {
+      errorURIProperty =
+          "log:consumewithcamel. + flowId + ?level=OFF&showAll=true&multiline=true&style=Fixed";
     }
 
+    properties = new TreeMap<>();
 
-    
-    public void startCamelConnector() throws Exception {
+    properties.put("id", flowId);
+    properties.put("flow.name", "camelroute-" + flowId);
+    properties.put("flow.type", "default");
 
-		getLogger().info("Starting Apache Camel");
+    properties.put("flow.logLevel", logLevelProperty);
+    properties.put("flow.offloading", "false");
 
-		//Start Camel context
-   		connector.start();
-	
-    }
-    
-    @OnStopped
-    public void stopCamelConnector() throws Exception {
+    properties.put("from.uri", fromURIProperty);
+    properties.put("to.1.uri", toURIProperty);
+    properties.put("error.uri", errorURIProperty);
 
-		getLogger().info("Stopping Apache Camel");
+    properties.put("offramp.uri.list", "direct:flow=" + flowId + "endpoint=1");
 
-    	connector.stopFlow(flowId);
-    	connector.stop();
-    	template.stop();
-    	
-    }
-    
-    
-    private void configureCamelFlow(final ProcessContext context) throws Exception{
-    	
-		String fromURIProperty = context.getProperty(FROM_URI).getValue();
-		String toURIProperty = "direct:nifi-" + flowId;
-    	String errorURIProperty = context.getProperty(ERROR_URI).getValue();
-    	final String logLevelProperty = context.getProperty(LOG_LEVEL).getValue();
-    	
-    	if(errorURIProperty == null || errorURIProperty.isEmpty()) {
-    		errorURIProperty = "log:consumewithcamel. + flowId + ?level=OFF&showAll=true&multiline=true&style=Fixed";
-    	}
-		
-     	properties = new TreeMap<>();
-     	
-		properties.put("id",flowId);	
-		properties.put("flow.name","camelroute-" + flowId);	
-		properties.put("flow.type","default");
-
-		properties.put("flow.logLevel",logLevelProperty);
-		properties.put("flow.offloading","false");
-		
-		properties.put("from.uri", fromURIProperty);
-		properties.put("to.1.uri", toURIProperty);
-		properties.put("error.uri", errorURIProperty);
-				
-		properties.put("offramp.uri.list", "direct:flow=" + flowId + "endpoint=1");
-
-		connector.setFlowConfiguration(properties);
-
-    }
-    
+    connector.setFlowConfiguration(properties);
+  }
 }

@@ -21,19 +21,15 @@ import org.apache.nifi.util.TestRunners;
 import org.junit.Before;
 import org.junit.Test;
 
-
 public class ConsumeWithCamelTest {
 
-    private TestRunner testRunner;
+  private TestRunner testRunner;
 
-    @Before
-    public void init() {
-        testRunner = TestRunners.newTestRunner(ConsumeWithCamel.class);
-    }
+  @Before
+  public void init() {
+    testRunner = TestRunners.newTestRunner(ConsumeWithCamel.class);
+  }
 
-    @Test
-    public void testProcessor() {
-
-    }
-
+  @Test
+  public void testProcessor() {}
 }

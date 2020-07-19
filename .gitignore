@@ -1,2 +1,8 @@
 */target/*
 */logs/*
+.project
+logs/*
+*/.project
+*/.classpath
+*/.settings/*
+*/.gitignore

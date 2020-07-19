@@ -1,8 +1,7 @@
 package org.assimbly.routebuilder.test;
 
-public class ExistingRouteBuilderTest {
-	
-}
+public class ExistingRouteBuilderTest {}
+
 /*
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.test.junit4.CamelTestSupport;

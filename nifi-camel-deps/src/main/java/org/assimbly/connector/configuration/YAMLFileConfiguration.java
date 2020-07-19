@@ -2,54 +2,53 @@ package org.assimbly.connector.configuration;
 
 import java.util.List;
 import java.util.TreeMap;
-
 import org.assimbly.docconverter.DocConverter;
 
 public class YAMLFileConfiguration {
 
-    public static int PRETTY_PRINT_INDENT_FACTOR = 4;
-	private String xmlConfiguration;
-	private String yamlConfiguration;
+  public static int PRETTY_PRINT_INDENT_FACTOR = 4;
+  private String xmlConfiguration;
+  private String yamlConfiguration;
 
-	private List<TreeMap<String, String>> gatewayProperties;
-	private TreeMap<String, String> flowproperties;
-    
-	public String createConfiguration(String connectorId, List<TreeMap<String, String>> configurations) throws Exception {
+  private List<TreeMap<String, String>> gatewayProperties;
+  private TreeMap<String, String> flowproperties;
 
-		xmlConfiguration = new XMLFileConfiguration().createConfiguration(connectorId, configurations);
+  public String createConfiguration(
+      String connectorId, List<TreeMap<String, String>> configurations) throws Exception {
 
-		yamlConfiguration = DocConverter.convertXmlToYaml(xmlConfiguration);
-		        
-        return yamlConfiguration;
+    xmlConfiguration = new XMLFileConfiguration().createConfiguration(connectorId, configurations);
 
-	}
+    yamlConfiguration = DocConverter.convertXmlToYaml(xmlConfiguration);
 
-	public String createFlowConfiguration(TreeMap<String, String> configuration) throws Exception {
+    return yamlConfiguration;
+  }
 
-		xmlConfiguration = new XMLFileConfiguration().createFlowConfiguration(configuration);
+  public String createFlowConfiguration(TreeMap<String, String> configuration) throws Exception {
 
-		yamlConfiguration = DocConverter.convertXmlToYaml(xmlConfiguration);
-        
-        return yamlConfiguration;
-        
- 	}
+    xmlConfiguration = new XMLFileConfiguration().createFlowConfiguration(configuration);
 
-	public List<TreeMap<String, String>> getConfiguration(String connectorId, String configuration) throws Exception {
+    yamlConfiguration = DocConverter.convertXmlToYaml(xmlConfiguration);
 
-		xmlConfiguration = DocConverter.convertYamlToXml(configuration);
-		
-		gatewayProperties =  new XMLFileConfiguration().getConfiguration(connectorId, xmlConfiguration);
-		
-		return gatewayProperties;
-	}
-	
-	public TreeMap<String, String> getFlowConfiguration(String flowId, String configuration) throws Exception {
+    return yamlConfiguration;
+  }
 
-		xmlConfiguration = DocConverter.convertYamlToXml(configuration);
-		
-		flowproperties =  new XMLFileConfiguration().getFlowConfiguration(flowId, xmlConfiguration);
-		
-		return flowproperties;
-	}
-	
+  public List<TreeMap<String, String>> getConfiguration(String connectorId, String configuration)
+      throws Exception {
+
+    xmlConfiguration = DocConverter.convertYamlToXml(configuration);
+
+    gatewayProperties = new XMLFileConfiguration().getConfiguration(connectorId, xmlConfiguration);
+
+    return gatewayProperties;
+  }
+
+  public TreeMap<String, String> getFlowConfiguration(String flowId, String configuration)
+      throws Exception {
+
+    xmlConfiguration = DocConverter.convertYamlToXml(configuration);
+
+    flowproperties = new XMLFileConfiguration().getFlowConfiguration(flowId, xmlConfiguration);
+
+    return flowproperties;
+  }
 }

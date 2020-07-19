@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.assimbly.processors.producewithcamel;
+package org.wareld.nifi.camel.processors;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,8 +31,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.Processor;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.support.DefaultExchange;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -58,12 +60,46 @@ import org.apache.nifi.processor.util.StandardValidators;
 import org.assimbly.connector.Connector;
 import org.assimbly.docconverter.DocConverter;
 
-@Tags({"Camel Producer"})
-@CapabilityDescription("Produce messages with Apache Camel")
+@Tags({"Camel Submitter"})
+@CapabilityDescription("Put messages to Apache Camel component")
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute = "", description = "")})
 @WritesAttributes({@WritesAttribute(attribute = "", description = "")})
-public class ProduceWithCamel extends AbstractProcessor {
+public class PutWithCamel extends AbstractProcessor {
+
+  public static final PropertyDescriptor EXCHANGE_PATTERN =
+      new PropertyDescriptor.Builder()
+          .name("EXCHANGE_PATTERN")
+          .displayName("Exchange Pattern")
+          .description("Camel Exchange Pattern to use")
+          .required(true)
+          .allowableValues("InOut", "InOnly")
+          .defaultValue("InOut")
+          .build();
+
+  public static final PropertyDescriptor RETURN_BODY =
+      new PropertyDescriptor.Builder()
+          .name("RETURN_BODY")
+          .displayName("Return Body")
+          .description(
+              "Return Camel exchange out body as Nifi flowfile content (work only with InOut"
+                  + " pattern)")
+          .required(true)
+          .allowableValues("true", "false")
+          .defaultValue("true")
+          .build();
+
+  public static final PropertyDescriptor RETURN_HEADERS =
+      new PropertyDescriptor.Builder()
+          .name("RETURN_HEADERS")
+          .displayName("Return Headers")
+          .description(
+              "Return Camel exchange out headers into Nifi flowfile attributes (work only with"
+                  + " InOut pattern)")
+          .required(true)
+          .allowableValues("true", "false")
+          .defaultValue("false")
+          .build();
 
   public static final PropertyDescriptor TO_URI =
       new PropertyDescriptor.Builder()
@@ -109,19 +145,9 @@ public class ProduceWithCamel extends AbstractProcessor {
           .displayName("LOG_LEVEL")
           .description("Set the log level")
           .required(true)
-          .defaultValue("OFF")
+          .defaultValue("INFO")
           .allowableValues("OFF", "INFO", "WARN", "ERROR", "DEBUG", "TRACE")
           .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-          .build();
-
-  public static final PropertyDescriptor RETURN_HEADERS =
-      new PropertyDescriptor.Builder()
-          .name("RETURN_HEADERS")
-          .displayName("Return Headers")
-          .description("Return Camel exchange out headers into Nifi flowfile attributes")
-          .required(true)
-          .allowableValues("true", "false")
-          .defaultValue("false")
           .build();
 
   @Override
@@ -172,12 +198,14 @@ public class ProduceWithCamel extends AbstractProcessor {
     getLogger().info("Init process..............................");
 
     final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
+    descriptors.add(EXCHANGE_PATTERN);
+    descriptors.add(RETURN_BODY);
+    descriptors.add(RETURN_HEADERS);
     descriptors.add(TO_URI);
     descriptors.add(ERROR_URI);
     descriptors.add(MAXIMUM_REDELIVERIES);
     descriptors.add(REDELIVERY_DELAY);
     descriptors.add(LOG_LEVEL);
-    descriptors.add(RETURN_HEADERS);
     this.descriptors = Collections.unmodifiableList(descriptors);
 
     final Set<Relationship> relationships = new HashSet<Relationship>();
@@ -254,7 +282,7 @@ public class ProduceWithCamel extends AbstractProcessor {
       return;
     }
 
-    Map<String, String> headers = new HashMap<>();
+    Map<String, Object> headers = new HashMap<>();
     // Embed evaluated expression into headers map
     for (PropertyDescriptor propertyDescriptor : context.getProperties().keySet()) {
       if (propertyDescriptor.isDynamic()) {
@@ -276,37 +304,61 @@ public class ProduceWithCamel extends AbstractProcessor {
               // Convert flowFile to a string
               input = DocConverter.convertStreamToString(in);
 
-              // Enrich and process the exchange as InOut
-              Exchange exchange =
-                  template.request(
-                      "direct:nifi-" + flowId,
-                      new Processor() {
-                        public void process(Exchange exchange) throws Exception {
-                          for (Map.Entry<String, String> entry : headers.entrySet()) {
-                            exchange.getIn().setHeader(entry.getKey(), entry.getValue());
-                          }
-                          exchange.getMessage().setHeaders(exchange.getIn().getHeaders());
-                          exchange.getIn().setBody(input);
-                        }
-                      });
-
-              // Retrieve out headers
-              Map<String, Object> map = exchange.getMessage().getHeaders();
-              for (Map.Entry<String, Object> entry : map.entrySet()) {
-                try {
-                  if (!entry.getKey().startsWith("Assimbly")) {
-                    attributes.put(
-                        String.format("camel.%s", entry.getKey()), entry.getValue().toString());
-                  }
-                } catch (Exception ex) {
-                  // Some returned headers may not be string safe...
-                  getLogger()
-                      .debug(
-                          String.format("Unconverted back camel header: \"%s\"", entry.getKey()));
+              if (context.getProperty(EXCHANGE_PATTERN).getValue().equals("InOnly")) {
+                // Enrich and process the exchange as InOnly
+                Exchange exchange =
+                    new DefaultExchange(connector.getContext(), ExchangePattern.InOnly);
+                for (Map.Entry<String, Object> entry : headers.entrySet()) {
+                  exchange.getIn().setHeader(entry.getKey(), entry.getValue().toString());
                 }
+                exchange.getIn().setBody(input);
+                template.asyncSend("direct:nifi-" + flowId, exchange);
+                getLogger()
+                    .info(
+                        String.format(
+                            "%s InOnly message sent to \"direct:nifi-%s\"",
+                            exchange.getExchangeId(), flowId));
+
+              } else {
+                // Enrich and process the exchange as InOut
+                Exchange exchange =
+                    template.request(
+                        "direct:nifi-" + flowId,
+                        new Processor() {
+                          public void process(Exchange exchange) throws Exception {
+                            for (Map.Entry<String, Object> entry : headers.entrySet()) {
+                              exchange
+                                  .getIn()
+                                  .setHeader(entry.getKey(), entry.getValue().toString());
+                            }
+                            exchange.getMessage().setHeaders(exchange.getIn().getHeaders());
+                            exchange.getIn().setBody(input);
+                            getLogger()
+                                .info(
+                                    String.format(
+                                        "%s InOut message sent to \"direct:nifi-%s\"",
+                                        exchange.getExchangeId(), flowId));
+                          }
+                        });
+
+                // Retrieve out headers
+                Map<String, Object> map = exchange.getMessage().getHeaders();
+                for (Map.Entry<String, Object> entry : map.entrySet()) {
+                  try {
+                    if (!entry.getKey().startsWith("Assimbly")) {
+                      attributes.put(
+                          String.format("camel.%s", entry.getKey()), entry.getValue().toString());
+                    }
+                  } catch (Exception ex) {
+                    // Some returned headers may not be string safe...
+                    getLogger()
+                        .debug(
+                            String.format("Unconverted back camel header: \"%s\"", entry.getKey()));
+                  }
+                }
+                // TODO: would it be possible to fail converting body into bytes ?
+                body.set(exchange.getMessage().getBody(byte[].class));
               }
-              // TODO: would it be possible to fail converting body into bytes ?
-              body.set(exchange.getMessage().getBody(byte[].class));
 
             } catch (Exception ex) {
               ex.printStackTrace();
@@ -315,24 +367,27 @@ public class ProduceWithCamel extends AbstractProcessor {
           }
         });
 
-    if (context.getProperty(RETURN_HEADERS).getValue().equals("true")) {
-      // Write the camel headers into attributes
-      for (Map.Entry<String, Object> entry : attributes.entrySet()) {
-        flowfile = session.putAttribute(flowfile, entry.getKey(), entry.getValue().toString());
-      }
-    }
+    if (context.getProperty(EXCHANGE_PATTERN).getValue().equals("InOut")) {
 
-    if (body.get() != null) {
-      // To write the body/result back out into flow file
-      flowfile =
-          session.write(
-              flowfile,
-              new OutputStreamCallback() {
-                @Override
-                public void process(OutputStream out) throws IOException {
-                  out.write(body.get());
-                }
-              });
+      if (context.getProperty(RETURN_HEADERS).getValue().equals("true")) {
+        // Write the camel headers into attributes
+        for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+          flowfile = session.putAttribute(flowfile, entry.getKey(), entry.getValue().toString());
+        }
+      }
+
+      if (context.getProperty(RETURN_BODY).getValue().equals("true") && body.get() != null) {
+        // To write the body/result back out into flow file
+        flowfile =
+            session.write(
+                flowfile,
+                new OutputStreamCallback() {
+                  @Override
+                  public void process(OutputStream out) throws IOException {
+                    out.write(body.get());
+                  }
+                });
+      }
     }
 
     session.transfer(flowfile, SUCCESS);
@@ -367,7 +422,7 @@ public class ProduceWithCamel extends AbstractProcessor {
 
     if (errorURIProperty == null || errorURIProperty.isEmpty()) {
       errorURIProperty =
-          "log:ProduceWithCamel. + flowId + ?level=OFF&showAll=true&multiline=true&style=Fixed";
+          "log:PutWithCamel. + flowId + ?level=OFF&showAll=true&multiline=true&style=Fixed";
     }
 
     properties = new TreeMap<>();

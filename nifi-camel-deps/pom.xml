@@ -74,6 +74,11 @@
 			<version>${camel-version}</version>
 		</dependency>
 		<dependency>
+		    <groupId>org.apache.camel</groupId>
+		    <artifactId>camel-exec</artifactId>
+			<version>${camel-version}</version>
+		</dependency>
+		<dependency>
 		  <groupId>org.apache.camel</groupId>
 		  <artifactId>camel-groovy</artifactId>
 		  <version>${camel-version}</version>
@@ -486,7 +491,6 @@
 		<dependency>
 		    <groupId>ch.qos.logback</groupId>
 		    <artifactId>logback-classic</artifactId>
-		    <version>1.2.3</version>
 		        <exclusions>
 				      <exclusion> 
 				        <groupId>org.slf4j</groupId>
@@ -533,7 +537,6 @@
 		<dependency>
 		    <groupId>junit</groupId>
 		    <artifactId>junit</artifactId>
-		    <version>4.13</version>
 		    <scope>test</scope>
 		</dependency>
 		

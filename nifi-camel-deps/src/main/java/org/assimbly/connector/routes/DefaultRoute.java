@@ -1,7 +1,6 @@
 package org.assimbly.connector.routes;
 
 import java.util.Map;
-import org.apache.camel.LoggingLevel;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.DefaultErrorHandlerBuilder;
 import org.apache.camel.builder.RouteBuilder;
@@ -23,6 +22,7 @@ public class DefaultRoute extends RouteBuilder {
   private int redeliveryDelay;
   private int maximumRedeliveryDelay;
   private int backOffMultiplier;
+  private String logLevelAsString;
   private String logMessage;
 
   private String[] offrampUriList;
@@ -42,7 +42,36 @@ public class DefaultRoute extends RouteBuilder {
 
     logger.info("Configuring default route");
 
-    getContext().setTracing(true);
+    String routeName = props.get("flow.name");
+
+    if (this.props.containsKey("flow.logLevel")) {
+      logLevelAsString = props.get("flow.logLevel");
+    } else {
+      logLevelAsString = "INFO";
+    }
+
+    switch (logLevelAsString) {
+      case "TRACE":
+        getContext().setTracing(true);
+        logMessage =
+            "log:RouteName."
+                + routeName
+                + "?level=WARN&showAll=true&multiline=true&style=Fixed";
+        break;
+      case "DEBUG":
+        logMessage =
+            "log:RouteName."
+                + routeName
+                + "?level=WARN&showAll=true&multiline=true&style=Fixed";
+        break;
+      default:
+        logMessage =
+            "log:RouteName."
+                + routeName
+                + "?level="
+                + logLevelAsString
+                + "&showBody=false&multiline=false";
+    }
 
     Processor headerProcessor = new HeadersProcessor(props);
     Processor failureProcessor = new FailureProcessor();
@@ -87,21 +116,6 @@ public class DefaultRoute extends RouteBuilder {
       backOffMultiplier = 0;
     }
 
-    if (this.props.containsKey("flow.logLevel")) {
-      String logLevelAsString = props.get("flow.logLevel");
-      String routeName = props.get("flow.name");
-      logMessage =
-          "log:RouteName."
-              + routeName
-              + "?level="
-              + logLevelAsString
-              + "&showAll=true&multiline=true&style=Fixed";
-    } else {
-      String routeName = props.get("flow.name");
-      logMessage =
-          "log:RouteName." + routeName + "level=OFF&showAll=true&multiline=true&style=Fixed";
-    }
-
     if (this.props.containsKey("error.uri")) {
       routeErrorHandler =
           deadLetterChannel(props.get("error.uri"))
@@ -111,15 +125,15 @@ public class DefaultRoute extends RouteBuilder {
               .redeliveryDelay(redeliveryDelay)
               .maximumRedeliveryDelay(maximumRedeliveryDelay)
               .backOffMultiplier(backOffMultiplier)
-              .retriesExhaustedLogLevel(LoggingLevel.ERROR)
-              .retryAttemptedLogLevel(LoggingLevel.DEBUG)
-              .onExceptionOccurred(failureProcessor)
-              .log(log)
-              .logRetryStackTrace(false)
-              .logStackTrace(true)
-              .logHandled(true)
-              .logExhausted(true)
-              .logExhaustedMessageHistory(true);
+              // .retriesExhaustedLogLevel(LoggingLevel.ERROR)
+              // .retryAttemptedLogLevel(LoggingLevel.DEBUG)
+              .onExceptionOccurred(failureProcessor);
+      // .log(log)
+      // .logRetryStackTrace(false)
+      // .logStackTrace(true)
+      // .logHandled(true)
+      // .logExhausted(true)
+      // .logExhaustedMessageHistory(true);
     } else {
       routeErrorHandler =
           defaultErrorHandler()
@@ -129,15 +143,15 @@ public class DefaultRoute extends RouteBuilder {
               .redeliveryDelay(redeliveryDelay)
               .maximumRedeliveryDelay(maximumRedeliveryDelay)
               .backOffMultiplier(backOffMultiplier)
-              .retriesExhaustedLogLevel(LoggingLevel.ERROR)
-              .retryAttemptedLogLevel(LoggingLevel.DEBUG)
-              .onExceptionOccurred(failureProcessor)
-              .logRetryStackTrace(false)
-              .logStackTrace(true)
-              .logHandled(true)
-              .logExhausted(true)
-              .logExhaustedMessageHistory(true)
-              .log(logger);
+              // .retriesExhaustedLogLevel(LoggingLevel.ERROR)
+              // .retryAttemptedLogLevel(LoggingLevel.DEBUG)
+              .onExceptionOccurred(failureProcessor);
+      // .logRetryStackTrace(false)
+      // .logStackTrace(true)
+      // .logHandled(true)
+      // .logExhausted(true)
+      // .logExhaustedMessageHistory(true)
+      // .log(logger);
     }
 
     routeErrorHandler.setAsyncDelayedRedelivery(true);
@@ -145,9 +159,9 @@ public class DefaultRoute extends RouteBuilder {
     // The default Camel route (onramp)
     from(props.get("from.uri"))
         .errorHandler(routeErrorHandler)
-        .setHeader("AssimblyFlowID", constant(flowId))
-        .setHeader("AssimblyHeaderId", constant(props.get("from.header.id")))
-        .setHeader("AssimblyFrom", constant(props.get("from.uri")))
+        // .setHeader("AssimblyFlowID", constant(flowId))
+        // .setHeader("AssimblyHeaderId", constant(props.get("from.header.id")))
+        // .setHeader("AssimblyFrom", constant(props.get("from.uri")))
         .to(logMessage)
         .process(headerProcessor)
         .id("headerProcessor" + flowId)
@@ -166,8 +180,8 @@ public class DefaultRoute extends RouteBuilder {
 
       from(offrampUri)
           .errorHandler(routeErrorHandler)
-          .setHeader("AssimblyHeaderId", constant(headerId))
-          .setHeader("AssimblyTo", constant(toUri))
+          // .setHeader("AssimblyHeaderId", constant(headerId))
+          // .setHeader("AssimblyTo", constant(toUri))
           .process(headerProcessor)
           .id("headerProcessor" + flowId + "-" + endpointId)
           .process(convertProcessor)

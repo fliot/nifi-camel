@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.assimbly.processors.consumewithcamel;
+package org.wareld.nifi.camel.processors;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -51,11 +51,11 @@ import org.assimbly.connector.Connector;
 
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
 @Tags({"Camel Consumer"})
-@CapabilityDescription("Consume messages with Apache Camel")
+@CapabilityDescription("Get messages from Apache Camel")
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute = "", description = "")})
 @WritesAttributes({@WritesAttribute(attribute = "", description = "")})
-public class ConsumeWithCamel extends AbstractProcessor {
+public class GetWithCamel extends AbstractProcessor {
 
   public static final PropertyDescriptor FROM_URI =
       new PropertyDescriptor.Builder()
@@ -229,7 +229,7 @@ public class ConsumeWithCamel extends AbstractProcessor {
 
     if (errorURIProperty == null || errorURIProperty.isEmpty()) {
       errorURIProperty =
-          "log:consumewithcamel. + flowId + ?level=OFF&showAll=true&multiline=true&style=Fixed";
+          "log:getwithcamel. + flowId + ?level=OFF&showAll=true&multiline=true&style=Fixed";
     }
 
     properties = new TreeMap<>();

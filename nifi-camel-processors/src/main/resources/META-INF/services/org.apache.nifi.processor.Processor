@@ -12,5 +12,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-io.github.assimbly.processors.producewithcamel.ProduceWithCamel
-io.github.assimbly.processors.consumewithcamel.ConsumeWithCamel
+org.wareld.nifi.camel.processors.GetWithCamel
+org.wareld.nifi.camel.processors.PutWithCamel

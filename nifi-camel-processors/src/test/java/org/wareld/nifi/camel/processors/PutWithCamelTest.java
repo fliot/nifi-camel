@@ -14,20 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.github.assimbly.processors.producewithcamel;
+package org.wareld.nifi.camel.processors;
 
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ProduceWithCamelTest {
+public class PutWithCamelTest {
 
   private TestRunner testRunner;
 
   @Before
   public void init() {
-    testRunner = TestRunners.newTestRunner(ProduceWithCamel.class);
+    testRunner = TestRunners.newTestRunner(PutWithCamel.class);
   }
 
   @Test

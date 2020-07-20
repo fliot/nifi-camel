@@ -33,5 +33,11 @@
       <artifactId>nifi-camel-processors</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.wareld.nifi</groupId>
+      <artifactId>hawtio</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+    </dependency>
   </dependencies>
 </project>

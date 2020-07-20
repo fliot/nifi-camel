@@ -39,6 +39,7 @@
   <modules>
     <module>nifi-camel-deps</module>
     <module>nifi-camel-processors</module>
+    <module>nifi-camel-hawtio</module>
     <module>nifi-camel-nar</module>
   </modules>
 </project>

@@ -5,7 +5,6 @@ Nifi-Camel are some **experimental** processors for [Apache Nifi](http://nifi.ap
 Use these experimental processors at your own risk, because you may really quickly write some integration mixture that won't comply anymore with Apache Nifi registry concepts, so use these experimental processors only and only if, you really understand and accept these limitations.
 
 ### Covered Apache Nifi/Camel Patterns
-|                                |                    nifi-camel                 ||
 Camel Pattern                    | Nifi Processors        | Maturity Level        |
  ------------------------------- | :--------------------: | --------------------: |
 Camel Exchange Pattern Out       | GetWithCamel           | Experimental          |
@@ -13,7 +12,7 @@ Camel Exchange Pattern InOnly    | PutWithCamel / InOnly  | Mature              
 Camel Exchange Pattern InOut     | PutWithCamel / InOut   | Mature                |
 Camel Spring Java External Route | SpringContextProcessor | Unstable at this time |
 Camel Spring DSL External Route  | SpringContextProcessor | Unstable at this time |
-Monitoring/Console               | Embedded Hawtio webapp | Experimental          |
+Monitoring Console               | Embedded Hawtio webapp | Experimental          |
 
 ### Installation
 

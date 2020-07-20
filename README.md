@@ -1,6 +1,6 @@
 # About
 
-Nifi-Camel are some **experimental** processors for [Apache Nifi](http://nifi.apache.org/) that uses [Apache Camel](http://camel.apache.org/) to produce and consume messages. These processors are initially based on [Assimbly Connector](https://github.com/assimbly/connector), but it will forking quickly.
+Nifi-Camel are some **experimental** processors for [Apache Nifi](http://nifi.apache.org/) that uses [Apache Camel](http://camel.apache.org/) to produce and consume messages. These processors are initially based on [Assimbly Connector](https://github.com/assimbly/connector), but it's forking quickly.
 
 Use these experimental processors at your own risk, because you may really quickly write some integration mixture that won't comply anymore with Apache Nifi registry concepts, so use these experimental processors only and only if, you really understand and accept these limitations.
 

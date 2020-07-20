@@ -47,7 +47,7 @@ Camel headers returned into Nifi attributes
 
 ### Usage
 
-The GetWithCamel processor has 3 properties:
+The GetWithCamel processor has 4 properties:
 
 * Return Headers: true/false, if Camel headers must be returned into Nifi flowfile attributes
 * To URI: The URI of the Camel component.

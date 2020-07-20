@@ -1,0 +1,23 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camel="http://camel.apache.org/schema/spring"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans.xsd          
+		http://camel.apache.org/schema/spring 
+		http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <!-- java based routes -->
+    <bean id="routeBuilder" class="org.wareld.nifi.deps.route.SimpleRouteBuilder" />
+    <camelContext id="camel-java" xmlns="http://camel.apache.org/schema/spring">
+        <routeBuilder ref="routeBuilder" />
+    </camelContext>
+    
+    <!-- spring/dsl based routes -->
+  <camelContext id="camel-dsl" xmlns="http://camel.apache.org/schema/spring">
+    <route>
+      <from uri="direct-vm:dslin"/>
+      <to uri="log:dsl.log?level=INFO"/>
+      <to uri="direct-vm:dslout"/>
+    </route>
+  </camelContext>
+    
+</beans>

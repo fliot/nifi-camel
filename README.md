@@ -4,15 +4,6 @@ Nifi-Camel are some **experimental** processors for [Apache Nifi](http://nifi.ap
 
 Use these experimental processors at your own risk, because you may really quickly write some integration mixture that won't comply anymore with Apache Nifi registry concepts, so use these experimental processors only and only if, you really understand and accept these limitations.
 
-### Covered Apache Nifi/Camel Patterns
-Camel Pattern                    | Nifi Processors        | Maturity Level        |
- ------------------------------- | :--------------------: | --------------------: |
-Camel Exchange Pattern Out       | GetWithCamel           | Experimental          |
-Camel Exchange Pattern InOnly    | PutWithCamel / InOnly  | Mature                |
-Camel Exchange Pattern InOut     | PutWithCamel / InOut   | Mature                |
-Camel Spring Java External Route | SpringContextProcessor | Unstable at this time |
-Camel Spring DSL External Route  | SpringContextProcessor | Unstable at this time |
-Monitoring Console               | Embedded Hawtio webapp | Experimental          |
 
 ### Installation
 
@@ -21,38 +12,49 @@ Monitoring Console               | Embedded Hawtio webapp | Experimental        
 3. For older installations of Nifi (before version 1.9) you need to restart Nifi.
 
 
-
-
 ### Usage
 
-The PutWithCamel processor has 8 properties:
-
-* Exchange Pattern: InOnly/InOut, InOut wait for bringing back the answer
-* Return Body: true/false, if Camel body must be returned as Nifi flowfile content
-* Return Headers: true/false, if Camel headers must be returned into Nifi flowfile attributes
-* To URI: The URI of the Camel component
-* Error URI: The URI of the Camel componet in case of an error
-* Maximum Deliveries: Maximum of retries in case of an error 
-* Delivery Delay: Delay between retries
-* Log Level: The loglevel of the Camel route
+All the Camel messaging patterns can be used, thanks to these 3 processors:
+* **CamelContext** - autonomous processor, loading Java and/or DSL Camel routes. It must be deployed only once per Camel context to load.
+* **GetWithCamel** - processor to consume Camel bind point (can be a component or end of route "direct-vm:output"...). This processor is downstream only.
+* **PutWithCamel** - processor to submit to Camel bind point (can be a component or begining of route "direct-vm:input"...). This component can be used, in Camel terminology as InOut or InOnly, in Nifi terminology, with upstream, and with or without downstream.
 
 
-The processor accepts dynamic properties prefixed with "camel."
-![Alt text](doc/dynamic-properties.jpg?raw=true "Dynamic Properties")
+### These examples below demonstrate messaging patterns implementation.
+
+**Camel InOut**
+![Alt text](nifi-camel-processors/src/main/resources/docs/org.wareld.nifi.camel.processors.CamelContext/camel-InOut.jpg?raw=true "Camel InOut")
+
+**Camel InOnly-Out (loosely coupled)**
+![Alt text](nifi-camel-processors/src/main/resources/docs/org.wareld.nifi.camel.processors.CamelContext/camel-InOnly-loosely-coupled-Out.jpg?raw=true "Camel InOnly-Out (loosely coupled)")
+
+**Camel InOnly**
+![Alt text](nifi-camel-processors/src/main/resources/docs/org.wareld.nifi.camel.processors.CamelContext/camel-InOnly.jpg?raw=true "Camel InOnly")
+
+**Camel Out**
+![Alt text](nifi-camel-processors/src/main/resources/docs/org.wareld.nifi.camel.processors.CamelContext/camel-Out.jpg?raw=true "Camel InOnly")
 
 
-Camel headers returned into Nifi attributes
-![Alt text](doc/camel-headers.jpg?raw=true "Camel Headers")
+
+### Need to embed your own routes ?
+
+* Adapt <em>nifi-camel-deps/pom.xml</em> to embed the Camel components you need.
+* Code the Camel routes you want, in Java or in Camel DSL, make them available in <em>nifi-camel-deps/src/main/resources/somecontext.xml</em>
+* Add the Spring context filename to <em>nifi-camel-processors/src/main/java/org/wareld/nifi/camel/processors/CamelContext.java</em> CTX_CONFIG_PATH allowed values.
+* build and deploy.
+* Add <em>CamelContext</em> processor, with selected application context, and "Run Schedule = 12 hours".
+
+![Alt text](nifi-camel-processors/src/main/resources/docs/org.wareld.nifi.camel.processors.CamelContext/camel-context-2.jpg?raw=true "Camel Context")
 
 
-### Usage
 
-The GetWithCamel processor has 4 properties:
+### Use Camel Headers from Nifi Attributes, and Nifi Attributes for Camel Headers (and vice versa)
 
-* Return Headers: true/false, if Camel headers must be returned into Nifi flowfile attributes
-* To URI: The URI of the Camel component.
-* Error URI: The URI of the Camel componet in case of an error
-* Log Level: The loglevel of the Camel route
+* expression support.
+* from Nifi to Camel.
+* from Camel to Nifi.
+
+![Alt text](nifi-camel-processors/src/main/resources/docs/org.wareld.nifi.camel.processors.CamelContext/camel-headers.jpg?raw=true "Camel Context")
 
 
 For the URI format of the camel component see [Camel's component reference](https://camel.apache.org/components/latest/). For 

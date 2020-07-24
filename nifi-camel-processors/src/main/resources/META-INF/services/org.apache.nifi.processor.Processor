@@ -14,3 +14,4 @@
 # limitations under the License.
 org.wareld.nifi.camel.processors.GetWithCamel
 org.wareld.nifi.camel.processors.PutWithCamel
+org.wareld.nifi.camel.processors.CamelContext

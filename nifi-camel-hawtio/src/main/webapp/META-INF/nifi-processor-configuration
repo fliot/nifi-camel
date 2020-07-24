@@ -14,3 +14,4 @@
 # limitations under the License.
 org.wareld.nifi.camel.processors.GetWithCamel:org.wareld.nifi:nifi-camel-nar:1.11.4
 org.wareld.nifi.camel.processors.PutWithCamel:org.wareld.nifi:nifi-camel-nar:1.11.4
+org.wareld.nifi.camel.processors.CamelContext:org.wareld.nifi:nifi-camel-nar:1.11.4

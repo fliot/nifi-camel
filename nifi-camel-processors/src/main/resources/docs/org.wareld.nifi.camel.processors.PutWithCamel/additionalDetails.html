@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+    <!--
+      Licensed to the Apache Software Foundation (ASF) under one or more
+      contributor license agreements.  See the NOTICE file distributed with
+      this work for additional information regarding copyright ownership.
+      The ASF licenses this file to You under the Apache License, Version 2.0
+      (the "License"); you may not use this file except in compliance with
+      the License.  You may obtain a copy of the License at
+          http://www.apache.org/licenses/LICENSE-2.0
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      See the License for the specific language governing permissions and
+      limitations under the License.
+    -->
+    <head>
+        <meta charset="utf-8" />
+        <title>PutWithCamel</title>
+        <link rel="stylesheet" href="../../../../../css/component-usage.css" type="text/css" />
+    </head>
+
+    <body>
+        <!-- Processor Documentation ================================================== -->
+        <h2>Description:</h2>
+        <p>
+            <b>PutWithCamel</b> – allows integration of processes encapsulated in Camel Spring Application Context.
+        </p>
+        <p>
+            All the Camel messaging patterns can be used. 
+            <ul>
+                <li><i>CamelContext</i> - autonomous processor, loading Java and/or DSL Camel routes. It must be deployed only once per Camel context to load.</li>
+                <li><i>GetWithCamel</i> - processor to consume Camel bind point (can be a component or end of route "direct-vm:output"...).
+                This processor is downstream only.</li>
+                <li><i>PutWithCamel</i> - processor to submit to Camel bind point (can be a component or begining of route "direct-vm:input"...).
+                This component can be used, in Camel terminology as InOut or InOnly, in Nifi terminology, with upstream, and with or without downstream.</li>
+            </ul>
+            These examples below demonstrate messaging patterns implementation.
+        </p>
+        <p>
+            <b>Camel InOut</b><br>
+            <img src="camel-InOut.jpg"/>
+        </p>
+        <p>
+            <b>Camel InOnly-Out (loosely coupled)</b><br>
+            <img src="camel-InOnly-loosely-coupled-Out.jpg"/>
+        </p>
+        <p>
+            <b>Camel InOnly</b><br>
+            <img src="camel-InOnly.jpg"/>
+        </p>
+        <p>
+            <b>Camel Out</b><br>
+            <img src="camel-Out.jpg"/>
+        </p>
+        <p>
+            <b>Need to embed your own routes ?</b><br>
+            <ul>
+                <li>Adapt <i>nifi-camel-deps/pom.xml</i> to embed the Camel components you need.</li>
+                <li>Code the Camel routes you want, in Java or in Camel DSL, make them available in <i>nifi-camel-deps/src/main/resources/somecontext.xml</i>.</li>
+                <li>Add the Spring context filename to <i>nifi-camel-processors/src/main/java/org/wareld/nifi/camel/processors/CamelContext.java</i> CTX_CONFIG_PATH allowed values.</li>
+                <li>build and deploy.</li>
+                <li>Add <i>CamelContext</i> processor, with selected application context, and "Run Schedule = 12 hours".</li>
+            </ul>
+            <img src="camel-context-2.jpg" width="50%" height="50%"/>
+        </p>
+        <p>
+            <b>Use Camel Headers from Nifi Attributes, and Nifi Attributes for Camel Headers (and vice versa)</b><br>
+            <ul>
+                <li>expression support.</li>
+                <li>from Nifi to Camel.</li>
+                <li>from Camel to Nifi.</li>
+            </ul>
+            <img src="camel-headers.jpg" width="50%" height="50%"/>
+        </p>
+    </body>
+</html>
